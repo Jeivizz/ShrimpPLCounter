@@ -8,6 +8,7 @@ def draw_detections(
 ) -> np.ndarray:
     result = image.copy()
 
+    count = 0
     for detection in detections:
         x = detection["x"]
         y = detection["y"]
@@ -21,5 +22,10 @@ def draw_detections(
             (0, 255, 0),
             2
         )
+
+        count += 1
+    s = "PL: " + str(count)
+    cv2.putText(result, s, (20, 20),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1)
 
     return result
