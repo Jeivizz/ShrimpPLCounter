@@ -1,10 +1,10 @@
-# preprocessing.py
+
 import cv2
 import numpy as np
 
 BLUR_K = 25
 SIGMAX = 0
-TARGET_MEDIAN_AREA = 130   # área mediana de blob na escala "calibrada"
+TARGET_MEDIAN_AREA = 130
 SCALE_MIN, SCALE_MAX = 0.5, 2.0
 
 def resize(image: np.ndarray, scale: float) -> np.ndarray:

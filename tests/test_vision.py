@@ -11,7 +11,7 @@ os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts/truetype/dejavu"
 
 os.environ.pop("XDG_SESSION_TYPE", None)
 
-RSZ = 0.5 # zoom só da exibição
+RSZ = 1 # zoom só da exibição
 IMAGE_PATH = "./data/test.png"
 
 
