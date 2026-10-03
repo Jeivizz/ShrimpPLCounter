@@ -16,6 +16,9 @@ sealed class CountingError(message: String, cause: Throwable? = null) : Exceptio
     class FileTooLarge :
         CountingError("A imagem é grande demais para envio.")
 
+    class Processing(cause: Throwable) :
+        CountingError("Falha ao processar a imagem neste aparelho. Tente outra foto.", cause)
+
     class Server(val code: Int) :
         CountingError("O servidor retornou um erro (código $code).")
 }

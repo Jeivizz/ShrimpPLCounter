@@ -7,8 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.embasa.plcounter.camera.ImagePreparer
-import com.embasa.plcounter.data.CountingRepositoryImpl
-import com.embasa.plcounter.data.api.ApiClient
+import com.embasa.plcounter.data.local.LocalCountingRepository
 import com.embasa.plcounter.domain.CountingRepository
 import com.embasa.plcounter.domain.EstimateCalculator
 import com.embasa.plcounter.domain.model.BatchConfig
@@ -159,11 +158,12 @@ class BatchViewModel(
         }
     }
 
+    /** Aceita vírgula ou ponto como separador decimal. */
     private fun String.toDecimalOrNull(): Double? = trim().replace(',', '.').toDoubleOrNull()
 }
 
 class BatchViewModelFactory(private val app: Application) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        BatchViewModel(app, CountingRepositoryImpl(ApiClient.create())) as T
+        BatchViewModel(app, LocalCountingRepository()) as T
 }
