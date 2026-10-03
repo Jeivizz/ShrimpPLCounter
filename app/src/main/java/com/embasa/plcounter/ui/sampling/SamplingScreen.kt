@@ -1,7 +1,6 @@
 package com.embasa.plcounter.ui.sampling
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +23,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,16 +34,16 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.embasa.plcounter.ui.SAMPLE_COUNT
 import com.embasa.plcounter.ui.UiState
+import com.embasa.plcounter.ui.components.AnnotatedImage
 import com.embasa.plcounter.ui.components.IAquaHeader
+import com.embasa.plcounter.ui.components.ImageViewerDialog
 import com.embasa.plcounter.ui.components.TipsCard
 import com.embasa.plcounter.ui.theme.IAquaBlue
 import com.embasa.plcounter.ui.theme.IAquaTrackInactive
@@ -49,6 +52,7 @@ import com.embasa.plcounter.ui.theme.IAquaTrackInactive
 fun SamplingScreen(
     state: UiState,
     onPickGallery: () -> Unit,
+    onOpenCamera: () -> Unit,
     onCount: () -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit,
@@ -59,6 +63,9 @@ fun SamplingScreen(
     val slot = state.slots[index]
     val isLast = index == SAMPLE_COUNT - 1
     val counted = slot.result != null
+    val preview = slot.preview
+
+    var viewing by remember(index) { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         IAquaHeader()
@@ -72,7 +79,6 @@ fun SamplingScreen(
         ) {
             TipsCard()
 
-            // Título + chip "Amostra n de 3"
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -94,7 +100,6 @@ fun SamplingScreen(
                 }
             }
 
-            // Barra de progresso em 3 segmentos
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(SAMPLE_COUNT) { i ->
                     Box(
@@ -107,7 +112,6 @@ fun SamplingScreen(
                 }
             }
 
-            // Área de captura (tracejada)
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -115,15 +119,16 @@ fun SamplingScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .dashedBorder(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
-                    .clickable(enabled = !slot.isLoading, onClick = onPickGallery),
+                    .clickable(enabled = !slot.isLoading) {
+                        if (preview != null && counted) viewing = true else onPickGallery()
+                    },
                 contentAlignment = Alignment.Center,
             ) {
-                if (slot.preview != null) {
-                    Image(
-                        bitmap = slot.preview.asImageBitmap(),
-                        contentDescription = "Foto da amostra ${index + 1}",
+                if (preview != null) {
+                    AnnotatedImage(
+                        bitmap = preview,
+                        result = slot.result,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit,
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -154,6 +159,18 @@ fun SamplingScreen(
                             fontWeight = FontWeight.Bold,
                         )
                     }
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp),
+                        shape = RoundedCornerShape(50),
+                        color = Color.Black.copy(alpha = 0.55f),
+                    ) {
+                        Text(
+                            text = "Toque para ampliar e conferir",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
                 }
 
                 if (slot.isLoading) {
@@ -176,10 +193,9 @@ fun SamplingScreen(
                     shape = RoundedCornerShape(14.dp),
                 ) { Text("Galeria") }
 
-                // Câmera com moldura guia (CameraX): próxima etapa.
                 OutlinedButton(
-                    onClick = {},
-                    enabled = false,
+                    onClick = onOpenCamera,
+                    enabled = !slot.isLoading,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = RoundedCornerShape(14.dp),
                 ) { Text("Câmera") }
@@ -187,7 +203,7 @@ fun SamplingScreen(
 
             Button(
                 onClick = { if (counted) onNext() else onCount() },
-                enabled = !slot.isLoading && (counted || slot.preview != null),
+                enabled = !slot.isLoading && (counted || preview != null),
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
@@ -201,6 +217,15 @@ fun SamplingScreen(
                 )
             }
         }
+    }
+
+    if (viewing && preview != null) {
+        ImageViewerDialog(
+            bitmap = preview,
+            result = slot.result,
+            title = "Amostra ${index + 1} — ${slot.result?.count ?: 0} PLs",
+            onDismiss = { viewing = false },
+        )
     }
 }
 

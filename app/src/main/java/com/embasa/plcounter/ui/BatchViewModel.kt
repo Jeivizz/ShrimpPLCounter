@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
 class BatchViewModel(
@@ -28,6 +29,8 @@ class BatchViewModel(
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
+
+    // Bytes JPEG de cada amostra: ficam fora do UiState para não inflar o estado.
     private val images = arrayOfNulls<ImagePreparer.Prepared>(SAMPLE_COUNT)
 
     // ---------- Splash / Config ----------
@@ -69,11 +72,16 @@ class BatchViewModel(
 
     fun onImagePicked(uri: Uri) {
         val index = _state.value.currentIndex
+        // Se a foto veio da câmera, volta para a tela de amostragem.
+        _state.update { if (it.screen == Screen.Camera) it.copy(screen = Screen.Sampling) else it }
         updateSlot(index) { SampleSlot(isLoading = true) }
         viewModelScope.launch {
             try {
                 val prepared = withContext(Dispatchers.IO) {
-                    ImagePreparer.prepare(getApplication<Application>().contentResolver, uri)
+                    val p = ImagePreparer.prepare(getApplication<Application>().contentResolver, uri)
+                    // Arquivo temporário da câmera: não precisamos mais dele.
+                    if (uri.scheme == "file") uri.path?.let { File(it).delete() }
+                    p
                 }
                 images[index] = prepared
                 updateSlot(index) { SampleSlot(preview = prepared.bitmap) }
@@ -84,6 +92,10 @@ class BatchViewModel(
             }
         }
     }
+
+    fun openCamera() = _state.update { it.copy(screen = Screen.Camera) }
+
+    fun closeCamera() = _state.update { it.copy(screen = Screen.Sampling) }
 
     fun countCurrent() {
         val index = _state.value.currentIndex
@@ -147,7 +159,6 @@ class BatchViewModel(
         }
     }
 
-    /** Aceita vírgula ou ponto como separador decimal. */
     private fun String.toDecimalOrNull(): Double? = trim().replace(',', '.').toDoubleOrNull()
 }
 

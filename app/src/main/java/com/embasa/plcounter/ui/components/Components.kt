@@ -1,10 +1,12 @@
 package com.embasa.plcounter.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,9 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.embasa.plcounter.R
 import com.embasa.plcounter.ui.theme.IAquaBlue
 import com.embasa.plcounter.ui.theme.IAquaChip
 import com.embasa.plcounter.ui.theme.IAquaTipCard
@@ -36,11 +41,16 @@ fun IAquaHeader(modifier: Modifier = Modifier) {
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "IAqua",
-                color = IAquaBlue,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
+            val logo = painterResource(id = R.drawable.iaqua_logo)
+
+            Image(
+                painter = logo,
+                contentDescription = "IAqua Logo Vertical",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth(0.33f)
+                    .aspectRatio(logo.intrinsicSize.width /
+                            logo.intrinsicSize.height)
             )
         }
     }
@@ -55,8 +65,14 @@ fun TipsCard(modifier: Modifier = Modifier) {
         border = BorderStroke(1.dp, IAquaChip),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Image(
+                painter = painterResource(id = R.drawable.baseline_lightbulb_24),
+                contentDescription = "lightbulb",
+                modifier = Modifier
+
+            )
             Text(
-                text = "\uD83D\uDCA1 DICAS PARA MELHOR PRECISÃO",
+                text = "DICAS PARA MELHOR PRECISÃO",
                 style = MaterialTheme.typography.titleSmall,
                 color = IAquaTitleBlue,
                 fontWeight = FontWeight.Bold,

@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiConfig {
     @Volatile
-    var baseUrl: String = "http://192.168.0.4:8000/"
+    var baseUrl: String = "http://192.168.0.9:8000/"
 }
 
 object ApiClient {

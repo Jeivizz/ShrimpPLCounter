@@ -7,7 +7,7 @@ import com.embasa.plcounter.domain.model.SampleResult
 
 const val SAMPLE_COUNT = 3
 
-enum class Screen { Splash, Config, Sampling, Result }
+enum class Screen { Splash, Config, Sampling, Camera, Result }
 
 data class SampleSlot(
     val preview: Bitmap? = null,

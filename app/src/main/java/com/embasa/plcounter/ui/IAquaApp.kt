@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import com.embasa.plcounter.camera.CameraCaptureScreen
 import com.embasa.plcounter.ui.config.ConfigScreen
 import com.embasa.plcounter.ui.result.ResultScreen
 import com.embasa.plcounter.ui.sampling.SamplingScreen
@@ -34,14 +35,21 @@ fun IAquaApp(vm: BatchViewModel) {
             onPickGallery = {
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
             },
+            onOpenCamera = vm::openCamera,
             onCount = vm::countCurrent,
             onNext = vm::nextOrFinish,
             onBack = vm::backToConfig,
         )
 
+        Screen.Camera -> CameraCaptureScreen(
+            onCaptured = vm::onImagePicked,
+            onClose = vm::closeCamera,
+        )
+
         Screen.Result -> state.estimate?.let { estimate ->
             ResultScreen(
                 estimate = estimate,
+                slots = state.slots,
                 onNewBatch = vm::newBatch,
                 onBack = vm::backToConfig,
             )
