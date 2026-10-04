@@ -12,7 +12,6 @@ data class BatchConfig(
     val scaleFactor: Double get() = totalVolumeLiters * 1000.0 / sampleVolumeMl
 }
 
-
 data class Detection(
     val centerX: Float,
     val centerY: Float,
@@ -35,4 +34,19 @@ data class LotEstimate(
     val estimatedTotal: Long,
     val coefficientOfVariation: Double?,
     val highVariability: Boolean,
+)
+
+data class WeightEstimate(
+    val weightPerPlG: Double,
+    val expectedTotalWeightG: Double,
+    val perSampleWeightPerPlG: List<Double>,
+    val coefficientOfVariation: Double?,
+)
+
+enum class Agreement { GOOD, MODERATE, LOW }
+data class WeightComparison(
+    val measuredTotalWeightG: Double,
+    val countByWeight: Long,
+    val deviation: Double,
+    val agreement: Agreement,
 )

@@ -12,6 +12,8 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -20,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -40,11 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
@@ -82,9 +82,20 @@ fun CameraCaptureScreen(
         if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
-    val previewView = remember { PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER } }
+    // Prévia e foto no MESMO formato 4:3, para o círculo da tela coincidir com o recorte da foto.
+    val resolutionSelector = remember {
+        ResolutionSelector.Builder()
+            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+            .build()
+    }
+    val previewView = remember {
+        PreviewView(context).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
+    }
     val imageCapture = remember {
-        ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setResolutionSelector(resolutionSelector)
+            .build()
     }
     val providerHolder = remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var capturing by remember { mutableStateOf(false) }
@@ -97,7 +108,7 @@ fun CameraCaptureScreen(
             future.addListener({
                 val provider = future.get()
                 providerHolder.value = provider
-                val preview = Preview.Builder().build()
+                val preview = Preview.Builder().setResolutionSelector(resolutionSelector).build()
                 preview.setSurfaceProvider(previewView.surfaceProvider)
                 provider.unbindAll()
                 provider.bindToLifecycle(
@@ -113,8 +124,16 @@ fun CameraCaptureScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (hasPermission) {
-            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-            GuideOverlay(modifier = Modifier.fillMaxSize())
+            // O quadro inteiro da câmera (3:4 em retrato) com o círculo desenhado por cima.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .aspectRatio(CameraGuide.FRAME_ASPECT),
+            ) {
+                AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+                CircleGuideOverlay(modifier = Modifier.fillMaxSize())
+            }
 
             Column(
                 modifier = Modifier
@@ -123,10 +142,11 @@ fun CameraCaptureScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Centralize o recipiente no quadro", color = Color.White)
+                Text("Centralize o recipiente no círculo", color = Color.White)
                 Text(
-                    "Câmera a 90°, boa luz, fundo branco",
+                    "Tudo fora do círculo será descartado (fica preto)",
                     color = Color.White.copy(alpha = 0.75f),
+                    textAlign = TextAlign.Center,
                 )
             }
 
@@ -194,26 +214,23 @@ fun CameraCaptureScreen(
     }
 }
 
-/** Escurece a imagem fora de um quadro central, para o usuário alinhar o recipiente. */
+/** Escurece tudo fora do círculo: é uma prévia do que ficará preto na foto. */
 @Composable
-private fun GuideOverlay(modifier: Modifier = Modifier) {
+private fun CircleGuideOverlay(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        val side = minOf(size.width, size.height) * 0.88f
-        val left = (size.width - side) / 2f
-        val top = (size.height - side) / 2f - size.height * 0.03f
-        val radius = CornerRadius(32.dp.toPx())
+        val radius = minOf(size.width, size.height) * CameraGuide.DIAMETER_FRACTION / 2f
+        val center = Offset(size.width / 2f, size.height / 2f)
 
         val path = Path().apply {
             fillType = PathFillType.EvenOdd
             addRect(Rect(0f, 0f, size.width, size.height))
-            addRoundRect(RoundRect(Rect(left, top, left + side, top + side), radius))
+            addOval(Rect(center = center, radius = radius))
         }
-        drawPath(path, Color.Black.copy(alpha = 0.55f))
-        drawRoundRect(
+        drawPath(path, Color.Black.copy(alpha = 0.85f))
+        drawCircle(
             color = Color.White,
-            topLeft = Offset(left, top),
-            size = Size(side, side),
-            cornerRadius = radius,
+            radius = radius,
+            center = center,
             style = Stroke(width = 3.dp.toPx()),
         )
     }

@@ -11,7 +11,9 @@ import com.embasa.plcounter.ui.config.ConfigScreen
 import com.embasa.plcounter.ui.result.ResultScreen
 import com.embasa.plcounter.ui.sampling.SamplingScreen
 import com.embasa.plcounter.ui.splash.SplashScreen
+import com.embasa.plcounter.ui.weighing.WeighingScreen
 
+/** Navegação simples por estado: sem dependência extra. */
 @Composable
 fun IAquaApp(vm: BatchViewModel) {
     val state by vm.state.collectAsState()
@@ -42,16 +44,28 @@ fun IAquaApp(vm: BatchViewModel) {
         )
 
         Screen.Camera -> CameraCaptureScreen(
-            onCaptured = vm::onImagePicked,
+            onCaptured = vm::onCameraCaptured,
             onClose = vm::closeCamera,
         )
 
         Screen.Result -> state.estimate?.let { estimate ->
             ResultScreen(
                 estimate = estimate,
+                config = state.config,
                 slots = state.slots,
+                onWeighing = vm::openWeighing,
                 onNewBatch = vm::newBatch,
                 onBack = vm::backToConfig,
+            )
+        }
+
+        Screen.Weighing -> state.estimate?.let { estimate ->
+            WeighingScreen(
+                state = state,
+                estimate = estimate,
+                onSampleWeightChange = vm::onSampleWeightChange,
+                onTotalWeightChange = vm::onTotalWeightChange,
+                onBack = vm::closeWeighing,
             )
         }
     }

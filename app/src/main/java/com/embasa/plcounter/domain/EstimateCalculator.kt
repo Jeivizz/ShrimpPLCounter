@@ -5,13 +5,8 @@ import com.embasa.plcounter.domain.model.LotEstimate
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
 
-/**
- * Estimativa do lote: média das contagens das amostras x (volume total / volume da amostra).
- * Ex.: contagens 45, 50, 52 | amostra 100 mL | tanque 1000 L  ->  média 49 x 10.000 = 490.000 PLs.
- */
 object EstimateCalculator {
 
-    /** Limite inicial para alertar variação alta entre amostras. Ajuste com dados reais. */
     const val DEFAULT_CV_WARNING = 0.20
 
     fun estimate(

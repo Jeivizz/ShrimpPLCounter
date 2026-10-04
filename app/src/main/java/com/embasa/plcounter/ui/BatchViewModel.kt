@@ -10,6 +10,7 @@ import com.embasa.plcounter.camera.ImagePreparer
 import com.embasa.plcounter.data.local.LocalCountingRepository
 import com.embasa.plcounter.domain.CountingRepository
 import com.embasa.plcounter.domain.EstimateCalculator
+import com.embasa.plcounter.domain.WeightCalculator
 import com.embasa.plcounter.domain.model.BatchConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,13 +64,19 @@ class BatchViewModel(
                 currentIndex = 0,
                 estimate = null,
                 configError = null,
+                sampleWeightTexts = List(SAMPLE_COUNT) { "" },
+                totalWeightText = "",
+                weightEstimate = null,
+                weightComparison = null,
             )
         }
     }
 
     // ---------- Amostragem ----------
 
-    fun onImagePicked(uri: Uri) {
+    fun onCameraCaptured(uri: Uri) = onImagePicked(uri, circularMask = true)
+
+    fun onImagePicked(uri: Uri, circularMask: Boolean = false) {
         val index = _state.value.currentIndex
         // Se a foto veio da câmera, volta para a tela de amostragem.
         _state.update { if (it.screen == Screen.Camera) it.copy(screen = Screen.Sampling) else it }
@@ -77,7 +84,11 @@ class BatchViewModel(
         viewModelScope.launch {
             try {
                 val prepared = withContext(Dispatchers.IO) {
-                    val p = ImagePreparer.prepare(getApplication<Application>().contentResolver, uri)
+                    val p = ImagePreparer.prepare(
+                        getApplication<Application>().contentResolver,
+                        uri,
+                        circularMask = circularMask,
+                    )
                     // Arquivo temporário da câmera: não precisamos mais dele.
                     if (uri.scheme == "file") uri.path?.let { File(it).delete() }
                     p
@@ -148,6 +159,46 @@ class BatchViewModel(
                 totalVolumeText = it.totalVolumeText,
             )
         }
+    }
+
+    // ---------- Pesagem (referência) ----------
+
+    fun openWeighing() = _state.update { it.copy(screen = Screen.Weighing) }
+
+    fun closeWeighing() = _state.update { it.copy(screen = Screen.Result) }
+
+    fun onSampleWeightChange(index: Int, text: String) = _state.update { s ->
+        s.copy(
+            sampleWeightTexts = s.sampleWeightTexts.mapIndexed { i, t -> if (i == index) text else t },
+        ).withWeighing()
+    }
+
+    fun onTotalWeightChange(text: String) =
+        _state.update { it.copy(totalWeightText = text).withWeighing() }
+
+    /** Recalcula peso por PL e a comparação sempre que um campo muda. */
+    private fun UiState.withWeighing(): UiState {
+        val lot = estimate ?: return copy(weightEstimate = null, weightComparison = null)
+
+        val weightsG = sampleWeightTexts.map { it.toDecimalOrNull() }
+        val valid = weightsG.size == lot.sampleCounts.size && weightsG.all { it != null && it > 0 }
+        val weightEstimate = if (valid) {
+            runCatching {
+                WeightCalculator.estimate(lot.sampleCounts, weightsG.filterNotNull(), lot.estimatedTotal)
+            }.getOrNull()
+        } else {
+            null
+        }
+
+        val totalKg = totalWeightText.toDecimalOrNull()
+        val comparison = if (weightEstimate != null && totalKg != null && totalKg > 0) {
+            runCatching {
+                WeightCalculator.compare(weightEstimate, lot.estimatedTotal, totalKg * 1000.0)
+            }.getOrNull()
+        } else {
+            null
+        }
+        return copy(weightEstimate = weightEstimate, weightComparison = comparison)
     }
 
     // ---------- helpers ----------
