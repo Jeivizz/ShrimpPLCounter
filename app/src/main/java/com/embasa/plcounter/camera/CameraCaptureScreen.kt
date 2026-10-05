@@ -1,6 +1,7 @@
 package com.embasa.plcounter.camera
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageManager
@@ -18,10 +19,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,10 +36,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -50,11 +57,17 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.LifecycleOwner
+import com.embasa.plcounter.ui.components.IAquaIcon
+import com.embasa.plcounter.ui.components.IconKind
+import com.embasa.plcounter.ui.components.PrimaryButton
+import com.embasa.plcounter.ui.components.RoundIconButton
 import java.io.File
 
 @Composable
@@ -122,6 +135,19 @@ fun CameraCaptureScreen(
         onDispose { providerHolder.value?.unbindAll() }
     }
 
+    // Fundo preto da câmera: ícones claros nas barras do sistema enquanto esta tela estiver aberta.
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val window = context.findActivity()?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        controller?.isAppearanceLightStatusBars = false
+        controller?.isAppearanceLightNavigationBars = false
+        onDispose {
+            controller?.isAppearanceLightStatusBars = true
+            controller?.isAppearanceLightNavigationBars = true
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (hasPermission) {
             // O quadro inteiro da câmera (3:4 em retrato) com o círculo desenhado por cima.
@@ -135,34 +161,63 @@ fun CameraCaptureScreen(
                 CircleGuideOverlay(modifier = Modifier.fillMaxSize())
             }
 
-            Column(
+            // Topo: fechar + instrução
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
+                    .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Centralize o recipiente no círculo", color = Color.White)
-                Text(
-                    "Tudo fora do círculo será descartado (fica preto)",
-                    color = Color.White.copy(alpha = 0.75f),
-                    textAlign = TextAlign.Center,
-                )
+                RoundIconButton(icon = IconKind.Close, onClick = onClose)
+                Spacer(Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                ) {
+                    Text(
+                        "Centralize o recipiente no círculo",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        "O que ficar fora do círculo será descartado",
+                        color = Color.White.copy(alpha = 0.75f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
 
+            // Base: obturador
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(24.dp),
+                    .padding(bottom = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                errorText?.let { Text(it, color = Color(0xFFFF8A80), textAlign = TextAlign.Center) }
+                errorText?.let {
+                    Text(
+                        it,
+                        color = Color(0xFFFF8A80),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
 
-                Surface(
+                // Anel + miolo: o miolo escurece enquanto salva a foto.
+                Box(
                     modifier = Modifier
-                        .size(76.dp)
+                        .size(84.dp)
+                        .border(4.dp, Color.White, CircleShape)
+                        .padding(7.dp)
+                        .clip(CircleShape)
+                        .background(if (capturing) Color.Gray else Color.White)
                         .clickable(enabled = !capturing) {
                             capturing = true
                             errorText = null
@@ -184,11 +239,7 @@ fun CameraCaptureScreen(
                                 },
                             )
                         },
-                    shape = CircleShape,
-                    color = if (capturing) Color.Gray else Color.White,
-                ) {}
-
-                OutlinedButton(onClick = onClose) { Text("Cancelar", color = Color.White) }
+                )
             }
         } else {
             Column(
@@ -196,19 +247,22 @@ fun CameraCaptureScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
+                IAquaIcon(IconKind.Camera, tint = Color.White, iconSize = 48.dp)
+                Spacer(Modifier.height(16.dp))
                 Text(
-                    "Precisamos da permissão da câmera para tirar a foto da amostra.",
+                    "Precisamos da permissão da câmera para fotografar a amostra.",
                     color = Color.White,
                     textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Button(
+                Spacer(Modifier.height(24.dp))
+                PrimaryButton(
+                    text = "Permitir câmera",
                     onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                    modifier = Modifier.padding(top = 16.dp),
-                ) { Text("Permitir câmera") }
-                OutlinedButton(onClick = onClose, modifier = Modifier.padding(top = 8.dp)) {
-                    Text("Voltar", color = Color.White)
-                }
+                )
+                Spacer(Modifier.height(10.dp))
+                TextButton(onClick = onClose) { Text("Voltar", color = Color.White) }
             }
         }
     }
@@ -243,4 +297,13 @@ private fun Context.findLifecycleOwner(): LifecycleOwner {
         ctx = ctx.baseContext
     }
     error("Contexto sem LifecycleOwner")
+}
+
+private fun Context.findActivity(): Activity? {
+    var ctx: Context = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }

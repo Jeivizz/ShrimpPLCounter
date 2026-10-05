@@ -16,11 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,17 +33,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.embasa.plcounter.ui.SAMPLE_COUNT
 import com.embasa.plcounter.ui.UiState
 import com.embasa.plcounter.ui.components.AnnotatedImage
-import com.embasa.plcounter.ui.components.IAquaHeader
+import com.embasa.plcounter.ui.components.AppTopBar
+import com.embasa.plcounter.ui.components.CaptureTips
+import com.embasa.plcounter.ui.components.IAquaIcon
+import com.embasa.plcounter.ui.components.IconKind
 import com.embasa.plcounter.ui.components.ImageViewerDialog
-import com.embasa.plcounter.ui.components.TipsCard
-import com.embasa.plcounter.ui.theme.IAquaBlue
-import com.embasa.plcounter.ui.theme.IAquaTrackInactive
+import com.embasa.plcounter.ui.components.PrimaryButton
+import com.embasa.plcounter.ui.components.SecondaryButton
+import com.embasa.plcounter.ui.components.StepTrack
+import com.embasa.plcounter.ui.theme.Alvorada
+import com.embasa.plcounter.ui.theme.Cobalto
+import com.embasa.plcounter.ui.theme.Coral
+import com.embasa.plcounter.ui.theme.Mare
+import com.embasa.plcounter.ui.theme.TextoSuave
 
 @Composable
 fun SamplingScreen(
@@ -68,57 +71,40 @@ fun SamplingScreen(
     var viewing by remember(index) { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        IAquaHeader()
+        AppTopBar(
+            trailing = {
+                Text(
+                    text = "Amostra ${index + 1} de $SAMPLE_COUNT",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextoSuave,
+                )
+            },
+        )
 
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 20.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            TipsCard()
+            StepTrack(
+                total = SAMPLE_COUNT,
+                current = index,
+                done = state.slots.map { it.result != null },
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "Processo de Amostragem",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer) {
-                    Text(
-                        text = "Amostra ${index + 1} de $SAMPLE_COUNT",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
+            CaptureTips()
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(SAMPLE_COUNT) { i ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(if (i <= index) IAquaBlue else IAquaTrackInactive),
-                    )
-                }
-            }
-
+            // Área de captura: o resultado aparece sobre a própria foto.
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .dashedBorder(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(if (preview != null) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
+                    .then(if (preview == null) Modifier.dashedBorder(Cobalto.copy(alpha = 0.35f)) else Modifier)
                     .clickable(enabled = !slot.isLoading) {
                         if (preview != null && counted) viewing = true else onPickGallery()
                     },
@@ -131,91 +117,110 @@ fun SamplingScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(shape = CircleShape, color = Color.White, modifier = Modifier.size(88.dp)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("\uD83D\uDCF7", fontSize = 36.sp)
-                            }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Box(
+                            modifier = Modifier.size(84.dp).clip(CircleShape).background(Color.White),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            IAquaIcon(IconKind.Camera, tint = Cobalto, iconSize = 38.dp)
                         }
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "Capturar Amostra ${index + 1}",
+                            text = "Foto da amostra ${index + 1}",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Mare,
+                        )
+                        Text(
+                            text = "Toque aqui ou use os botões abaixo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextoSuave,
                         )
                     }
                 }
 
+                // Resultado: a contagem em destaque, em cima da foto.
                 slot.result?.let { result ->
-                    Surface(
-                        modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = IAquaBlue,
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(14.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.White)
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        Box(Modifier.size(9.dp).clip(CircleShape).background(Alvorada))
+                        Spacer(Modifier.size(10.dp))
                         Text(
-                            text = "${result.count} PLs",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
+                            text = "${result.count}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Mare,
                         )
+                        Spacer(Modifier.size(6.dp))
+                        Text("PLs", style = MaterialTheme.typography.labelLarge, color = TextoSuave)
                     }
-                    Surface(
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp),
-                        shape = RoundedCornerShape(50),
-                        color = Color.Black.copy(alpha = 0.55f),
-                    ) {
-                        Text(
-                            text = "Toque para ampliar e conferir",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
+                    Text(
+                        text = "Toque para ampliar",
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(14.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                    )
                 }
 
                 if (slot.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.6f)),
-                        contentAlignment = Alignment.Center,
-                    ) { CircularProgressIndicator() }
+                    Column(
+                        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = if (counted || preview != null) "Contando…" else "Abrindo foto…",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White,
+                        )
+                    }
                 }
             }
 
             slot.error?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                Text(it, style = MaterialTheme.typography.bodySmall, color = Coral)
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
+                SecondaryButton(
+                    text = "Galeria",
                     onClick = onPickGallery,
                     enabled = !slot.isLoading,
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                ) { Text("Galeria") }
-
-                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    icon = IconKind.Gallery,
+                )
+                SecondaryButton(
+                    text = "Câmera",
                     onClick = onOpenCamera,
                     enabled = !slot.isLoading,
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                ) { Text("Câmera") }
-            }
-
-            Button(
-                onClick = { if (counted) onNext() else onCount() },
-                enabled = !slot.isLoading && (counted || preview != null),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Text(
-                    text = when {
-                        !counted -> "Contar Amostra"
-                        isLast -> "Ver Resultado"
-                        else -> "Próxima Amostra"
-                    },
-                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    icon = IconKind.Camera,
                 )
             }
+
+            PrimaryButton(
+                text = when {
+                    !counted -> "Contar amostra"
+                    isLast -> "Ver resultado"
+                    else -> "Próxima amostra"
+                },
+                onClick = { if (counted) onNext() else onCount() },
+                enabled = !slot.isLoading && (counted || preview != null),
+                modifier = Modifier.padding(bottom = 14.dp),
+            )
         }
     }
 
@@ -229,16 +234,12 @@ fun SamplingScreen(
     }
 }
 
-private fun Modifier.dashedBorder(
-    color: Color,
-    radius: Dp = 24.dp,
-    strokeWidth: Dp = 1.5.dp,
-): Modifier = drawBehind {
+private fun Modifier.dashedBorder(color: Color, radius: Float = 28f): Modifier = drawBehind {
     drawRoundRect(
         color = color,
-        cornerRadius = CornerRadius(radius.toPx()),
+        cornerRadius = CornerRadius(radius.dp.toPx()),
         style = Stroke(
-            width = strokeWidth.toPx(),
+            width = 1.5.dp.toPx(),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f)),
         ),
     )
