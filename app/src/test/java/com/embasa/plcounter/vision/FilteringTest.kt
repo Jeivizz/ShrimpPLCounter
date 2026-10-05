@@ -5,7 +5,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Testa só a lógica pura (sem OpenCV nativo), então roda na JVM. */
 class FilteringTest {
 
     private val params = VisionParams(minArea = 30, maxArea = 500, maxGap = 15, fragRatio = 0.5)

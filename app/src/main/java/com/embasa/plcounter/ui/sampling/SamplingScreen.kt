@@ -106,7 +106,7 @@ fun SamplingScreen(
                     .background(if (preview != null) Color.Black else MaterialTheme.colorScheme.surfaceVariant)
                     .then(if (preview == null) Modifier.dashedBorder(Cobalto.copy(alpha = 0.35f)) else Modifier)
                     .clickable(enabled = !slot.isLoading) {
-                        if (preview != null && counted) viewing = true else onPickGallery()
+                        if (preview != null && counted) viewing = true else onOpenCamera()
                     },
                 contentAlignment = Alignment.Center,
             ) {

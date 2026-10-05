@@ -18,7 +18,6 @@ object Detection {
         val c = DoubleArray(n * 2)
         centroids.get(0, 0, c)
 
-        // label 0 é o fundo
         return (1 until n).map { i ->
             Component(
                 x = s[i * 5 + Imgproc.CC_STAT_LEFT],
