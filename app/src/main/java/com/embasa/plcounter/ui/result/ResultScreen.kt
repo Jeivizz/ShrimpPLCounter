@@ -1,15 +1,6 @@
 package com.embasa.plcounter.ui.result
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,47 +14,50 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.embasa.plcounter.domain.model.BatchConfig
 import com.embasa.plcounter.domain.model.LotEstimate
 import com.embasa.plcounter.ui.SampleSlot
 import com.embasa.plcounter.ui.components.AnnotatedImage
-import com.embasa.plcounter.ui.components.IAquaHeader
+import com.embasa.plcounter.ui.components.AppTopBar
+import com.embasa.plcounter.ui.components.Disclosure
+import com.embasa.plcounter.ui.components.Fmt
+import com.embasa.plcounter.ui.components.IAquaIcon
+import com.embasa.plcounter.ui.components.IconKind
 import com.embasa.plcounter.ui.components.ImageViewerDialog
-import com.embasa.plcounter.ui.theme.IAquaBlue
-import com.embasa.plcounter.ui.theme.IAquaTipCard
-import java.text.NumberFormat
-import java.util.Locale
+import com.embasa.plcounter.ui.components.PrimaryButton
+import com.embasa.plcounter.ui.components.SecondaryButton
+import com.embasa.plcounter.ui.components.StatusPill
+import com.embasa.plcounter.ui.components.WaveFill
+import com.embasa.plcounter.ui.theme.Alvorada
+import com.embasa.plcounter.ui.theme.AlvoradaTint
+import com.embasa.plcounter.ui.theme.Cobalto
+import com.embasa.plcounter.ui.theme.Linha
+import com.embasa.plcounter.ui.theme.Mare
+import com.embasa.plcounter.ui.theme.Raso
+import com.embasa.plcounter.ui.theme.TextoSuave
+import com.embasa.plcounter.ui.theme.VerdeMar
 import kotlin.math.roundToLong
-
-private val PT_BR: Locale = Locale.forLanguageTag("pt-BR")
-private val INTEGER_FORMAT: NumberFormat = NumberFormat.getIntegerInstance(PT_BR)
-private val NUMBER_FORMAT: NumberFormat = NumberFormat.getNumberInstance(PT_BR).apply {
-    minimumFractionDigits = 0
-    maximumFractionDigits = 2
-}
 
 @Composable
 fun ResultScreen(
@@ -79,134 +73,87 @@ fun ResultScreen(
     var viewingIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        IAquaHeader()
-
         Column(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
         ) {
-            Text(
-                text = "Resultado do Lote",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            AppTopBar()
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            Column(modifier = Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Resultado do lote", style = MaterialTheme.typography.headlineMedium, color = Mare)
+                Text(
+                    text = "${estimate.sampleCounts.size} amostras analisadas",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextoSuave,
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+            WaterHero(estimate, config)
+
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "ESTIMATIVA TOTAL DE PL",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = INTEGER_FORMAT.format(estimate.estimatedTotal),
-                        fontSize = 40.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = IAquaBlue,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "Média por amostra: " + String.format(PT_BR, "%.1f", estimate.meanCount),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    estimate.coefficientOfVariation?.let { cv ->
+                // Amostras: lista simples, uma divisória entre linhas (sem caixa por item).
+                Column {
+                    Text("Amostras", style = MaterialTheme.typography.titleMedium, color = Mare)
+                    Spacer(Modifier.height(6.dp))
+                    estimate.sampleCounts.forEachIndexed { i, count ->
+                        val preview = slots.getOrNull(i)?.preview
+                        SampleRow(
+                            index = i,
+                            count = count,
+                            slot = slots.getOrNull(i),
+                            onClick = { if (preview != null) viewingIndex = i },
+                        )
+                        if (i < estimate.sampleCounts.lastIndex) HorizontalDivider(color = Linha)
+                    }
+                }
+
+                if (estimate.highVariability) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(AlvoradaTint)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        IAquaIcon(IconKind.Info, tint = Alvorada, iconSize = 22.dp)
+                        Spacer(Modifier.width(12.dp))
                         Text(
-                            text = "Variação entre amostras: " + String.format(PT_BR, "%.1f%%", cv * 100),
+                            text = "As amostras variam bastante entre si. Misture bem o recipiente " +
+                                    "e considere refazer a amostragem para uma estimativa mais confiável.",
                             style = MaterialTheme.typography.bodyMedium,
+                            color = Mare,
                         )
                     }
                 }
-            }
 
-            if (config != null) {
-                ParametersCard(config = config, estimate = estimate)
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Contagem por amostra", fontWeight = FontWeight.Bold)
-                    Text(
-                        text = "Toque na miniatura para conferir as marcações.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    estimate.sampleCounts.forEachIndexed { i, count ->
-                        val preview = slots.getOrNull(i)?.preview
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = preview != null) { viewingIndex = i },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            if (preview != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(Color.Black),
-                                ) {
-                                    AnnotatedImage(
-                                        bitmap = preview,
-                                        result = slots[i].result,
-                                        modifier = Modifier.fillMaxSize(),
-                                        strokeWidth = 1.dp,
-                                    )
-                                }
-                            }
-                            Text("Amostra ${i + 1}", modifier = Modifier.weight(1f))
-                            Text("$count PLs", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
+                if (config != null) {
+                    CalculationDisclosure(config = config, estimate = estimate)
                 }
             }
+        }
 
-            if (estimate.highVariability) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = IAquaTipCard),
-                ) {
-                    Text(
-                        text = "As amostras variam bastante entre si. Misture bem o recipiente e " +
-                                "considere refazer a amostragem para uma estimativa mais confiável.",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
-
-            OutlinedButton(
+        // Ações fixas no rodapé: sempre ao alcance do polegar.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SecondaryButton(
+                text = "Conferir por pesagem",
                 onClick = onWeighing,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) { Text("Estimativa por Pesagem (referência)", fontWeight = FontWeight.SemiBold) }
-
-            Button(
-                onClick = onNewBatch,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) { Text("Nova Análise", fontWeight = FontWeight.Bold) }
-
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) { Text("Voltar") }
+                modifier = Modifier.fillMaxWidth(),
+                icon = IconKind.Scale,
+            )
+            PrimaryButton(text = "Nova análise", onClick = onNewBatch)
         }
     }
 
@@ -225,109 +172,74 @@ fun ResultScreen(
     }
 }
 
-private fun formatNumber(value: Double): String = NUMBER_FORMAT.format(value)
-
-/** Textos já formatados: calculados uma vez, não a cada quadro da animação. */
-private class ParamTexts(
-    val sampleVolume: String,
-    val totalVolume: String,
-    val samples: String,
-    val factor: String,
-    val calculation: String,
-    val factorFormula: String,
-)
-
-/** Card recolhível: começa fechado; tocar no cabeçalho abre/fecha os detalhes do cálculo. */
+/**
+ * A contagem "dentro da água": a superfície ondulada vem do logo (sol sobre o mar) e é o
+ * único bloco colorido da tela; o resto fica quieto para o número ser a primeira coisa lida.
+ */
 @Composable
-private fun ParametersCard(config: BatchConfig, estimate: LotEstimate) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-
-    // Mesma duração e curva na seta e na abertura, para andarem juntas.
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label = "seta",
-    )
-
-    val texts = remember(config, estimate) {
-        val shownMean = Math.round(estimate.meanCount * 100) / 100.0
-        // "=" só quando a média arredondada reproduz o total; senão "≈".
-        val sign = if ((shownMean * config.scaleFactor).roundToLong() == estimate.estimatedTotal) "=" else "≈"
-        ParamTexts(
-            sampleVolume = "${formatNumber(config.sampleVolumeMl)} ml",
-            totalVolume = "${formatNumber(config.totalVolumeLiters)} L",
-            samples = "${estimate.sampleCounts.size}",
-            factor = "× ${formatNumber(config.scaleFactor)}",
-            calculation = "${formatNumber(shownMean)} PLs (média) × ${formatNumber(config.scaleFactor)} " +
-                    "$sign ${INTEGER_FORMAT.format(estimate.estimatedTotal)} PLs",
-            factorFormula = "Fator = ${formatNumber(config.totalVolumeLiters)} L × 1.000 ÷ " +
-                    "${formatNumber(config.sampleVolumeMl)} ml",
-        )
+private fun WaterHero(estimate: LotEstimate, config: BatchConfig?) {
+    val water = remember {
+        Brush.verticalGradient(listOf(Color(0xFF2C6FD1), Cobalto, Color(0xFF0A1F6B)))
+    }
+    val total = remember(estimate) { Fmt.int(estimate.estimatedTotal) }
+    val numberSize = when {
+        total.length <= 8 -> 56.sp
+        total.length <= 10 -> 46.sp
+        else -> 38.sp
     }
 
-    Card(
-        onClick = { expanded = !expanded },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
-            // Cabeçalho (sempre visível)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Parâmetros do lote", fontWeight = FontWeight.Bold)
-                    Text(
-                        text = if (expanded) "Toque para recolher" else "Toque para ver os detalhes do cálculo",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    text = "▼",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    // Lido dentro do bloco do graphicsLayer: só redesenha, não recompõe.
-                    modifier = Modifier.graphicsLayer { rotationZ = arrowRotation },
-                )
-            }
+        WaveFill(brush = water, modifier = Modifier.matchParentSize(), amplitude = 10.dp, wavelength = 240.dp)
+        WaveFill(
+            color = Color.White.copy(alpha = 0.08f),
+            modifier = Modifier.matchParentSize().padding(top = 26.dp),
+            amplitude = 8.dp,
+            wavelength = 180.dp,
+            phase = { 2.2f },
+        )
 
-            // Detalhes: altura e transparência animadas juntas.
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
-                        fadeIn(animationSpec = tween(200, delayMillis = 50)),
-                exit = shrinkVertically(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
-                        fadeOut(animationSpec = tween(150)),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    ParamRow("Volume da amostra", texts.sampleVolume)
-                    ParamRow("Volume total", texts.totalVolume)
-                    ParamRow("Amostras analisadas", texts.samples)
-                    ParamRow("Fator de extrapolação", texts.factor)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 52.dp, bottom = 30.dp, start = 20.dp, end = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = if (config != null) {
+                    "Estimativa para ${Fmt.number(config.totalVolumeLiters)} L"
+                } else {
+                    "Estimativa do lote"
+                },
+                style = MaterialTheme.typography.titleSmall,
+                color = Color.White.copy(alpha = 0.8f),
+            )
+            Text(
+                text = total,
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = numberSize),
+                color = Color.White,
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "pós-larvas",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.8f),
+            )
 
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Como foi calculado",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = texts.calculation,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = texts.factorFormula,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Spacer(Modifier.height(20.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatusPill(text = "Média ${Fmt.fixed(estimate.meanCount, 1)}", dotColor = Raso, onDark = true)
+                estimate.coefficientOfVariation?.let { cv ->
+                    StatusPill(
+                        text = "Variação ${Fmt.percent(cv)}",
+                        dotColor = if (estimate.highVariability) Alvorada else VerdeMar,
+                        onDark = true,
                     )
                 }
             }
@@ -336,9 +248,73 @@ private fun ParametersCard(config: BatchConfig, estimate: LotEstimate) {
 }
 
 @Composable
-private fun ParamRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label)
-        Text(value, fontWeight = FontWeight.SemiBold)
+private fun SampleRow(index: Int, count: Int, slot: SampleSlot?, onClick: () -> Unit) {
+    val preview = slot?.preview
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = preview != null, onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.Black),
+        ) {
+            if (preview != null) {
+                AnnotatedImage(
+                    bitmap = preview,
+                    result = slot?.result,
+                    modifier = Modifier.fillMaxSize(),
+                    strokeWidth = 1.dp,
+                )
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Amostra ${index + 1}", style = MaterialTheme.typography.titleSmall, color = Mare)
+            if (preview != null) {
+                Text("Toque para conferir", style = MaterialTheme.typography.bodySmall, color = TextoSuave)
+            }
+        }
+        Text("$count", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = Mare)
+        Spacer(Modifier.width(6.dp))
+        Text("PLs", style = MaterialTheme.typography.labelLarge, color = TextoSuave)
+    }
+}
+
+@Composable
+private fun CalculationDisclosure(config: BatchConfig, estimate: LotEstimate) {
+    val rows = remember(config, estimate) {
+        val shownMean = Math.round(estimate.meanCount * 100) / 100.0
+
+        val sign = if ((shownMean * config.scaleFactor).roundToLong() == estimate.estimatedTotal) "=" else "≈"
+        listOf(
+            "Volume da amostra" to "${Fmt.number(config.sampleVolumeMl)} ml",
+            "Volume total" to "${Fmt.number(config.totalVolumeLiters)} L",
+            "Amostras analisadas" to "${estimate.sampleCounts.size}",
+            "Fator de extrapolação" to "× ${Fmt.number(config.scaleFactor)}",
+        ) to Pair(
+            "${Fmt.number(shownMean)} PLs (média) × ${Fmt.number(config.scaleFactor)} $sign ${Fmt.int(estimate.estimatedTotal)} PLs",
+            "Fator = ${Fmt.number(config.totalVolumeLiters)} L × 1.000 ÷ ${Fmt.number(config.sampleVolumeMl)} ml",
+        )
+    }
+    val (params, calc) = rows
+
+    Disclosure(
+        title = "Como chegamos a esse número",
+        summary = "Volumes, fator e conta",
+    ) {
+        params.forEach { (label, value) ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(label, style = MaterialTheme.typography.bodyMedium, color = TextoSuave)
+                Text(value, style = MaterialTheme.typography.titleSmall, color = Mare)
+            }
+        }
+        HorizontalDivider(color = Linha)
+        Text(calc.first, style = MaterialTheme.typography.titleSmall, color = Mare)
+        Text(calc.second, style = MaterialTheme.typography.bodySmall, color = TextoSuave)
     }
 }

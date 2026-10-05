@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
@@ -16,9 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -54,6 +51,12 @@ import kotlin.math.roundToInt
 
 private val MarkerColor = Color(0xFF00E676)
 
+/**
+ * Foto com as marcações desenhadas por cima. As coordenadas das detecções vêm do backend
+ * na escala da imagem enviada (a mesma do [bitmap]), então basta reescalar para a tela.
+ * Desenhar no app (em vez de pedir a imagem anotada) evita baixar outro JPEG e
+ * prepara a correção manual (tocar para adicionar/remover).
+ */
 @Composable
 fun AnnotatedImage(
     bitmap: Bitmap,
@@ -97,6 +100,11 @@ fun AnnotatedImage(
     }
 }
 
+/**
+ * Tela cheia: fundo todo preto (inclusive atrás das barras do sistema), instruções numa
+ * faixa no topo e a imagem ocupando o espaço restante, com zoom (pinça), arrastar e
+ * toque duplo para restaurar.
+ */
 @Composable
 fun ImageViewerDialog(
     bitmap: Bitmap,
@@ -144,19 +152,10 @@ fun ImageViewerDialog(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                Surface(
-                    modifier = Modifier.clickable(onClick = onDismiss),
-                    shape = RoundedCornerShape(50),
-                    color = Color.White.copy(alpha = 0.2f),
-                ) {
-                    Text(
-                        text = "✕",
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    )
-                }
+                RoundIconButton(icon = IconKind.Close, onClick = onDismiss)
             }
 
+            // Imagem: só o espaço abaixo do topo; o zoom não passa por cima das instruções.
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -194,6 +193,7 @@ fun ImageViewerDialog(
                 )
             }
 
+            // Reserva o espaço da barra de navegação, também em preto.
             Spacer(modifier = Modifier.fillMaxWidth().navigationBarsPadding())
         }
     }
