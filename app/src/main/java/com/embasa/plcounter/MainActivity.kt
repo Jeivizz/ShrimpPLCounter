@@ -10,11 +10,14 @@ import androidx.activity.viewModels
 import com.embasa.plcounter.ui.BatchViewModel
 import com.embasa.plcounter.ui.BatchViewModelFactory
 import com.embasa.plcounter.ui.IAquaApp
+import com.embasa.plcounter.ui.growth.GrowthViewModel
+import com.embasa.plcounter.ui.growth.GrowthViewModelFactory
 import com.embasa.plcounter.ui.theme.IAquaTheme
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: BatchViewModel by viewModels { BatchViewModelFactory(application) }
+    private val growthViewModel: GrowthViewModel by viewModels { GrowthViewModelFactory(application) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +28,7 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             IAquaTheme {
-                IAquaApp(viewModel)
+                IAquaApp(viewModel, growthViewModel)
             }
         }
     }

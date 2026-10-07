@@ -39,6 +39,7 @@ import com.embasa.plcounter.ui.components.IconKind
 import com.embasa.plcounter.ui.components.NumberField
 import com.embasa.plcounter.ui.components.PrimaryButton
 import com.embasa.plcounter.ui.components.ReadoutField
+import com.embasa.plcounter.ui.components.SecondaryButton
 import com.embasa.plcounter.ui.components.StatusPill
 import com.embasa.plcounter.ui.theme.Alvorada
 import com.embasa.plcounter.ui.theme.AlvoradaTint
@@ -58,6 +59,7 @@ fun WeighingScreen(
     estimate: LotEstimate,
     onSampleWeightChange: (Int, String) -> Unit,
     onTotalWeightChange: (String) -> Unit,
+    onTrackGrowth: () -> Unit,
     onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
@@ -208,6 +210,15 @@ fun WeighingScreen(
                     "Informe o peso das três amostras para calcular o peso de uma PL.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextoSuave,
+                )
+            }
+
+            if (weight != null) {
+                SecondaryButton(
+                    text = "Acompanhar crescimento deste lote",
+                    onClick = onTrackGrowth,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = IconKind.Chart,
                 )
             }
 

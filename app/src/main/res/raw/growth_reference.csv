@@ -1,0 +1,35 @@
+# Curva de referência de crescimento: peso de UM camarão, em gramas, por semana de cultivo.
+#
+# >>> ESTA É UMA CURVA DE EXEMPLO. SUBSTITUA pela tabela técnica da EMBASA. <<<
+# Como foi montada: PL10 ≈ 0,008 g; ≈ 1,2 g aos 42 dias; depois ≈ 1,2 g/semana, chegando a ≈ 13 g
+# perto de 16 semanas (ordens de grandeza de estudos publicados com L. vannamei; o crescimento
+# real varia com densidade, temperatura e sistema). A faixa min–max (0,65x a 1,55x do valor
+# típico) é ARBITRÁRIA, só para o gráfico ter uma banda.
+#
+# nome: Curva de exemplo (não oficial)
+#
+# Formato: semana,min_g,max_g   (ponto como separador decimal; ou use ';' como separador de
+# colunas e vírgula decimal). Linhas com # são comentários. Entre semanas a curva é interpolada.
+semana,min_g,max_g
+0,0.005,0.012
+1,0.01,0.025
+2,0.022,0.05
+3,0.05,0.11
+4,0.11,0.24
+5,0.25,0.55
+6,0.95,1.45
+7,1.65,2.4
+8,2.35,3.45
+9,3.1,4.5
+10,3.85,5.55
+11,4.6,6.6
+12,5.35,7.65
+13,6.1,8.7
+14,6.85,9.75
+15,7.6,10.8
+16,8.35,11.85
+17,9.1,13.314.9792
+14,7.0694,16.8578
+15,7.8572,18.7364
+16,8.645,20.615
+17,9.4328,22.4936

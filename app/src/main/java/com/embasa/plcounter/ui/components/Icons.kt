@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.sin
 
-enum class IconKind { Camera, Gallery, Close, Chevron, Check, Scale, Bulb, Drop, Waves, Info }
+enum class IconKind { Camera, Gallery, Close, Chevron, Check, Scale, Bulb, Drop, Waves, Info, Chart, Plus, Trash, Calendar }
+
 
 @Composable
 fun IAquaIcon(
@@ -93,6 +94,25 @@ fun IAquaIcon(
                     }
                     drawPath(path, tint, style = stroke)
                 }
+            }
+            IconKind.Chart -> {
+                line(4f to 4f, 4f to 20f, 20f to 20f)
+                line(7.5f to 15f, 11.5f to 11f, 14.5f to 13.5f, 19f to 7f)
+            }
+            IconKind.Plus -> {
+                line(12f to 5f, 12f to 19f)
+                line(5f to 12f, 19f to 12f)
+            }
+            IconKind.Trash -> {
+                line(4.5f to 7f, 19.5f to 7f)
+                line(9f to 7f, 9f to 4.5f, 15f to 4.5f, 15f to 7f)
+                line(6.5f to 7f, 7.5f to 20f, 16.5f to 20f, 17.5f to 7f)
+            }
+            IconKind.Calendar -> {
+                drawRoundRect(tint, pt(4f, 6f), Size(16f * u, 14f * u), CornerRadius(3f * u), style = stroke)
+                line(4f to 10.5f, 20f to 10.5f)
+                line(8.5f to 3.8f, 8.5f to 7.8f)
+                line(15.5f to 3.8f, 15.5f to 7.8f)
             }
             IconKind.Info -> {
                 drawCircle(tint, radius = 9f * u, center = pt(12f, 12f), style = stroke)
