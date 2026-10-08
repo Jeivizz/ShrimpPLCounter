@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.embasa.plcounter.R
 import com.embasa.plcounter.data.local.FileGrowthRepository
+import com.embasa.plcounter.domain.growth.GrowthAlertConfig
 import com.embasa.plcounter.domain.growth.GrowthLot
 import com.embasa.plcounter.domain.growth.GrowthReference
 import com.embasa.plcounter.domain.growth.GrowthRepository
@@ -23,7 +24,6 @@ data class GrowthUiState(
     val loading: Boolean = true,
     val lots: List<GrowthLot> = emptyList(),
     val selectedId: String? = null,
-    val logScale: Boolean = true,
     val message: String? = null,
 ) {
     val selected: GrowthLot? get() = lots.firstOrNull { it.id == selectedId }
@@ -33,6 +33,7 @@ class GrowthViewModel(
     app: Application,
     private val repository: GrowthRepository,
     val reference: GrowthReference,
+    val alertConfig: GrowthAlertConfig = GrowthAlertConfig(),
 ) : AndroidViewModel(app) {
 
     private val _state = MutableStateFlow(GrowthUiState())
@@ -47,11 +48,8 @@ class GrowthViewModel(
 
     fun select(id: String?) = _state.update { it.copy(selectedId = id) }
 
-    fun setLogScale(log: Boolean) = _state.update { it.copy(logScale = log) }
-
     fun dismissMessage() = _state.update { it.copy(message = null) }
 
-    /** Cria o lote e devolve o id (para abrir o detalhe em seguida). */
     fun createLot(name: String, startEpochDay: Long, baselineWeightG: Double?): String {
         val lot = GrowthLot(
             id = UUID.randomUUID().toString(),
@@ -77,7 +75,6 @@ class GrowthViewModel(
     private fun mutateLot(id: String, transform: (GrowthLot) -> GrowthLot) =
         mutate { lots -> lots.map { if (it.id == id) transform(it) else it } }
 
-    /** Atualiza a tela na hora e grava em seguida; os saves entram numa fila e mantêm a ordem. */
     private fun mutate(transform: (List<GrowthLot>) -> List<GrowthLot>) {
         var snapshot: List<GrowthLot> = emptyList()
         _state.update { s ->
@@ -97,12 +94,12 @@ class GrowthViewModelFactory(private val app: Application) : ViewModelProvider.F
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         // Curva de referência: arquivo editável em res/raw; se faltar ou estiver inválido, usa o exemplo.
-        val reference = runCatching {
-            app.resources.openRawResource(R.raw.growth_reference).bufferedReader(Charsets.UTF_8).use {
-                GrowthReference.parseCsv(it.readText())
-            }
-        }.getOrElse { GrowthReference.example() }
+        val text = runCatching {
+            app.resources.openRawResource(R.raw.growth_reference).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        }.getOrNull()
+        val reference = text?.let { runCatching { GrowthReference.parseCsv(it) }.getOrNull() } ?: GrowthReference.example()
+        val alertConfig = text?.let { runCatching { GrowthAlertConfig.parse(it) }.getOrNull() } ?: GrowthAlertConfig()
         val repository = FileGrowthRepository(File(app.filesDir, "growth_lots.json"))
-        return GrowthViewModel(app, repository, reference) as T
+        return GrowthViewModel(app, repository, reference, alertConfig) as T
     }
 }

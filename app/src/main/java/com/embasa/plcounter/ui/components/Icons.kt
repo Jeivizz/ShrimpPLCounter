@@ -18,9 +18,12 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.PI
 import kotlin.math.sin
 
-enum class IconKind { Camera, Gallery, Close, Chevron, Check, Scale, Bulb, Drop, Waves, Info, Chart, Plus, Trash, Calendar }
+enum class IconKind { Camera, Gallery, Close, Chevron, Check, Scale, Bulb, Drop, Waves, Info, Chart, Plus, Minus, Trash, Calendar }
 
-
+/**
+ * Ícones de traço arredondado desenhados em código (grade de 24 x 24), no mesmo peso de linha,
+ * para toda a interface ter a mesma voz visual e o app não depender de biblioteca de ícones.
+ */
 @Composable
 fun IAquaIcon(
     kind: IconKind,
@@ -103,6 +106,7 @@ fun IAquaIcon(
                 line(12f to 5f, 12f to 19f)
                 line(5f to 12f, 19f to 12f)
             }
+            IconKind.Minus -> line(5f to 12f, 19f to 12f)
             IconKind.Trash -> {
                 line(4.5f to 7f, 19.5f to 7f)
                 line(9f to 7f, 9f to 4.5f, 15f to 4.5f, 15f to 7f)

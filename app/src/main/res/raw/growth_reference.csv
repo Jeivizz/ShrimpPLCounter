@@ -10,26 +10,33 @@
 #
 # Formato: semana,min_g,max_g   (ponto como separador decimal; ou use ';' como separador de
 # colunas e vírgula decimal). Linhas com # são comentários. Entre semanas a curva é interpolada.
+#
+# ALERTAS DE CRESCIMENTO ANORMAL. Valores usados pelo app; altere conforme o critério técnico.
+# alerta_semanas: 2
+# alerta_critico_semanas: 3
+# alerta_ritmo: 0.5
+# pesagem_atrasada_dias: 10
+# - alerta_semanas: pesagens SEGUIDAS fora da faixa para mostrar o aviso (1 pesagem isolada não avisa).
+# - alerta_critico_semanas: pesagens seguidas ABAIXO da faixa para o alerta crítico.
+# - alerta_ritmo: ganho de peso menor que esta fração do esperado = crescimento desacelerado.
+# - pesagem_atrasada_dias: dias sem pesagem para lembrar o usuário.
+#
 semana,min_g,max_g
 0,0.005,0.012
 1,0.01,0.025
 2,0.022,0.05
-3,0.05,0.11
-4,0.11,0.24
-5,0.25,0.55
-6,0.95,1.45
-7,1.65,2.4
-8,2.35,3.45
-9,3.1,4.5
-10,3.85,5.55
-11,4.6,6.6
-12,5.35,7.65
-13,6.1,8.7
-14,6.85,9.75
-15,7.6,10.8
-16,8.35,11.85
-17,9.1,13.314.9792
-14,7.0694,16.8578
-15,7.8572,18.7364
-16,8.645,20.615
-17,9.4328,22.4936
+3,0.045,0.1
+4,0.1,0.22
+5,0.24,0.52
+6,0.95,1.4
+7,1.75,2.2
+8,2.5,3.1
+9,3.25,4
+10,4.05,4.85
+11,4.85,5.7
+12,5.65,6.55
+13,6.45,7.4
+14,7.25,8.25
+15,8.05,9.1
+16,8.85,9.95
+17,9.65,10.8

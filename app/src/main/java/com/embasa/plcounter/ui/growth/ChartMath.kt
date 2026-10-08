@@ -1,57 +1,79 @@
 package com.embasa.plcounter.ui.growth
 
+import com.embasa.plcounter.ui.components.Fmt
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.log10
+import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.roundToLong
 
-/** Cálculo dos eixos do gráfico (sem desenho, para poder testar). */
+class Ticks(val values: List<Double>, val step: Double)
+
+
+data class ChartViewport(val xMin: Double, val xMax: Double, val yMin: Double, val yMax: Double) {
+    val xSpan: Double get() = xMax - xMin
+    val ySpan: Double get() = yMax - yMin
+    val xCenter: Double get() = (xMin + xMax) / 2
+    val yCenter: Double get() = (yMin + yMax) / 2
+
+    fun zoomed(factor: Double, focusX: Double, focusY: Double) = ChartViewport(
+        xMin = focusX - (focusX - xMin) / factor,
+        xMax = focusX + (xMax - focusX) / factor,
+        yMin = focusY - (focusY - yMin) / factor,
+        yMax = focusY + (yMax - focusY) / factor,
+    )
+
+    fun panned(dx: Double, dy: Double) = ChartViewport(xMin + dx, xMax + dx, yMin + dy, yMax + dy)
+
+    fun clampedTo(bounds: ChartViewport, minXSpan: Double, minYSpan: Double): ChartViewport {
+        val (x0, x1) = clampAxis(xMin, xMax, bounds.xMin, bounds.xMax, minXSpan)
+        val (y0, y1) = clampAxis(yMin, yMax, bounds.yMin, bounds.yMax, minYSpan)
+        return ChartViewport(x0, x1, y0, y1)
+    }
+
+    private fun clampAxis(lo: Double, hi: Double, boundLo: Double, boundHi: Double, minSpan: Double): Pair<Double, Double> {
+        val total = boundHi - boundLo
+        val span = (hi - lo).coerceIn(min(minSpan, total), total)
+        var newLo = (lo + hi) / 2 - span / 2
+        var newHi = newLo + span
+        if (newLo < boundLo) { newLo = boundLo; newHi = boundLo + span }
+        if (newHi > boundHi) { newHi = boundHi; newLo = boundHi - span }
+        return newLo to newHi
+    }
+}
+
 object ChartMath {
 
-    /** [ticks] recebem rótulo; [minor] são só linhas de grade mais claras. */
-    class Axis(val min: Double, val max: Double, val ticks: List<Double>, val minor: List<Double> = emptyList(), val log: Boolean = false) {
-        /** Posição de [value] no eixo, de 0 (min) a 1 (max). */
-        fun position(value: Double): Double {
-            val v = if (log) log10(value.coerceAtLeast(min)) else value
-            val lo = if (log) log10(min) else min
-            val hi = if (log) log10(max) else max
-            return ((v - lo) / (hi - lo)).coerceIn(0.0, 1.0)
-        }
-    }
-
-    /** Eixo logarítmico: de uma potência de 10 abaixo do menor valor a uma acima do maior. */
-    fun logAxis(minValue: Double, maxValue: Double): Axis {
-        val lo = floor(log10(minValue.coerceAtLeast(1e-6))).toInt()
-        var hi = ceil(log10(maxValue.coerceAtLeast(1e-6))).toInt()
-        if (hi <= lo) hi = lo + 1
-        val ticks = (lo..hi).map { 10.0.pow(it) }
-        val minor = (lo until hi).flatMap { e -> listOf(2.0, 5.0).map { it * 10.0.pow(e) } }
-        return Axis(ticks.first(), ticks.last(), ticks, minor, log = true)
-    }
-
-    /** Eixo linear a partir de zero, com passo "redondo" (1, 2, 2,5, 5 x 10^k). */
-    fun linearAxis(maxValue: Double): Axis {
-        val safeMax = maxValue.coerceAtLeast(1e-6)
-        val raw = safeMax / 4.0
+    fun niceTicks(min: Double, max: Double, target: Int = 5): Ticks {
+        require(max > min) { "intervalo vazio" }
+        val raw = (max - min) / target
         val magnitude = 10.0.pow(floor(log10(raw)))
         val step = listOf(1.0, 2.0, 2.5, 5.0, 10.0).map { it * magnitude }.first { it >= raw - 1e-12 }
-        val top = ceil(safeMax / step - 1e-9) * step
-        val count = Math.round(top / step).toInt()
-        return Axis(0.0, top, (0..count).map { it * step })
+        val first = ceil(min / step - 1e-9).roundToLong()
+        val last = floor(max / step + 1e-9).roundToLong()
+        return Ticks((first..last).map { it * step }, step)
     }
 
-    /** Eixo das semanas: passo 1 até 12 semanas, 2 até 26, 4 acima. */
-    fun weekAxis(maxWeek: Double): Axis {
-        val needed = ceil(maxWeek.coerceAtLeast(1.0)).toInt()
-        val step = when {
-            needed <= 12 -> 1
-            needed <= 26 -> 2
-            else -> 4
+    private fun decimalsFor(step: Double): Int {
+        for (d in 0..3) {
+            val scaled = step * 10.0.pow(d)
+            if (abs(scaled - Math.round(scaled)) < 1e-6) return d
         }
-        val top = ceil(needed / step.toDouble()).toInt() * step
-        return Axis(0.0, top.toDouble(), (0..top step step).map { it.toDouble() })
+        return 3
     }
 
-    fun nearlyEqual(a: Double, b: Double, eps: Double = 1e-9) = abs(a - b) <= eps
+    fun weightLabels(ticks: Ticks): List<String> {
+        val inMg = (ticks.values.maxOrNull() ?: 0.0) < 0.1 - 1e-12
+        val scale = if (inMg) 1000.0 else 1.0
+        val decimals = decimalsFor(ticks.step * scale)
+        val unit = if (inMg) "mg" else "g"
+        return ticks.values.map { if (abs(it) < 1e-12) "0" else "${Fmt.fixed(it * scale, decimals)} $unit" }
+    }
+
+    fun weekLabels(ticks: Ticks): List<String> {
+        val decimals = decimalsFor(ticks.step)
+        return ticks.values.map { Fmt.fixed(it, decimals) }
+    }
 }

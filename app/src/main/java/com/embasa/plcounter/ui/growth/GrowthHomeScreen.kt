@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.embasa.plcounter.domain.growth.GrowthAlertConfig
+import com.embasa.plcounter.domain.growth.GrowthAlerts
 import com.embasa.plcounter.domain.growth.GrowthLot
 import com.embasa.plcounter.domain.growth.GrowthReference
 import com.embasa.plcounter.ui.components.AppTopBar
@@ -44,6 +46,7 @@ import com.embasa.plcounter.ui.theme.TextoSuave
 fun GrowthHomeScreen(
     state: GrowthUiState,
     reference: GrowthReference,
+    alertConfig: GrowthAlertConfig,
     onOpen: (String) -> Unit,
     onNewLot: () -> Unit,
 ) {
@@ -73,7 +76,7 @@ fun GrowthHomeScreen(
                 EmptyState()
             } else {
                 state.lots.sortedByDescending { it.startEpochDay }.forEach { lot ->
-                    LotRow(lot = lot, reference = reference, today = today, onClick = { onOpen(lot.id) })
+                    LotRow(lot = lot, reference = reference, alertConfig = alertConfig, today = today, onClick = { onOpen(lot.id) })
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -111,10 +114,11 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun LotRow(lot: GrowthLot, reference: GrowthReference, today: Long, onClick: () -> Unit) {
+private fun LotRow(lot: GrowthLot, reference: GrowthReference, alertConfig: GrowthAlertConfig, today: Long, onClick: () -> Unit) {
     val latest = lot.latest()
     val evaluation = latest?.let { reference.evaluate(lot.weekOf(it.epochDay), it.weightG) }
     val ageWeeks = Math.floorDiv(today - lot.startEpochDay, 7L)
+    val topAlert = GrowthAlerts.evaluate(lot, reference, alertConfig, today).firstOrNull()
 
     Row(
         modifier = Modifier
@@ -126,7 +130,10 @@ private fun LotRow(lot: GrowthLot, reference: GrowthReference, today: Long, onCl
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(lot.name, style = MaterialTheme.typography.titleMedium, color = Mare)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(lot.name, style = MaterialTheme.typography.titleMedium, color = Mare, modifier = Modifier.weight(1f, fill = false))
+                if (topAlert != null) StatusPill(severityLabel(topAlert.severity), severityColor(topAlert.severity))
+            }
             Text(
                 "Semana $ageWeeks • início ${Fmt.date(lot.startEpochDay)}",
                 style = MaterialTheme.typography.bodySmall,

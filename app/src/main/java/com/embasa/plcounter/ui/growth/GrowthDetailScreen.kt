@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.embasa.plcounter.domain.growth.GrowthAlertConfig
+import com.embasa.plcounter.domain.growth.GrowthAlerts
 import com.embasa.plcounter.domain.growth.GrowthLot
 import com.embasa.plcounter.domain.growth.GrowthReference
 import com.embasa.plcounter.domain.growth.WeighIn
@@ -42,7 +44,6 @@ import com.embasa.plcounter.ui.components.IAquaIcon
 import com.embasa.plcounter.ui.components.IconKind
 import com.embasa.plcounter.ui.components.PrimaryButton
 import com.embasa.plcounter.ui.components.StatusPill
-import com.embasa.plcounter.ui.theme.AlvoradaTint
 import com.embasa.plcounter.ui.theme.Cobalto
 import com.embasa.plcounter.ui.theme.Coral
 import com.embasa.plcounter.ui.theme.Linha
@@ -53,8 +54,7 @@ import com.embasa.plcounter.ui.theme.TextoSuave
 fun GrowthDetailScreen(
     lot: GrowthLot,
     reference: GrowthReference,
-    logScale: Boolean,
-    onLogScaleChange: (Boolean) -> Unit,
+    alertConfig: GrowthAlertConfig,
     onAddWeighIn: (epochDay: Long, weightG: Double) -> Unit,
     onRemoveWeighIn: (WeighIn) -> Unit,
     onDeleteLot: () -> Unit,
@@ -66,12 +66,15 @@ fun GrowthDetailScreen(
     var removing by remember { mutableStateOf<WeighIn?>(null) }
     var deletingLot by remember { mutableStateOf(false) }
 
-    val model = remember(lot, reference, logScale) { GrowthChartModel.build(lot, reference, logScale) }
+    val model = remember(lot, reference) { GrowthChartModel.build(lot, reference) }
+    // Janela visível: começa enquadrando os dados e volta a eles quando os dados mudam.
+    var viewport by remember(model.fit) { mutableStateOf(model.fit) }
     val today = todayEpochDay()
     val weekNow = lot.weekOf(today)
     val latest = lot.latest()
     val latestEval = latest?.let { reference.evaluate(lot.weekOf(it.epochDay), it.weightG) }
     val expectedNow = reference.rangeAt(weekNow)
+    val alerts = remember(lot, reference, alertConfig, today) { GrowthAlerts.evaluate(lot, reference, alertConfig, today) }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
@@ -99,6 +102,8 @@ fun GrowthDetailScreen(
                     color = TextoSuave,
                 )
             }
+
+            AlertBanner(alerts)
 
             // Leituras
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -128,10 +133,20 @@ fun GrowthDetailScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Text("Peso × semanas", style = MaterialTheme.typography.titleSmall, color = Mare)
-                    ScaleToggle(logScale = logScale, onChange = onLogScaleChange)
+                    ChartZoomControls(
+                        onZoomIn = { viewport = model.constrain(viewport.zoomed(1.5, viewport.xCenter, viewport.yCenter)) },
+                        onZoomOut = { viewport = model.constrain(viewport.zoomed(1 / 1.5, viewport.xCenter, viewport.yCenter)) },
+                        onFit = { viewport = model.fit },
+                        fitEnabled = viewport != model.fit,
+                    )
                 }
-                GrowthChart(model)
+                GrowthChart(model = model, viewport = viewport, onViewportChange = { viewport = it })
                 GrowthLegend()
+                Text(
+                    text = "Pince para ampliar • arraste para mover • toque duplo para ajustar",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextoSuave,
+                )
                 Text(
                     text = "Referência: ${reference.name ?: "curva do arquivo growth_reference.csv"}",
                     style = MaterialTheme.typography.bodySmall,
@@ -239,28 +254,6 @@ private fun Readout(
             color = if (valueSmall) Mare else Cobalto,
         )
         extra()
-    }
-}
-
-@Composable
-private fun ScaleToggle(logScale: Boolean, onChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.surfaceVariant).padding(3.dp)) {
-        ToggleChip("Log", logScale) { onChange(true) }
-        ToggleChip("Linear", !logScale) { onChange(false) }
-    }
-}
-
-@Composable
-private fun ToggleChip(text: String, active: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (active) Color.White else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = if (active) Cobalto else TextoSuave)
     }
 }
 

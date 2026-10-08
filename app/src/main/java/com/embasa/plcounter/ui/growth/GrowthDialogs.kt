@@ -43,7 +43,6 @@ import com.embasa.plcounter.ui.theme.TextoSuave
 
 private fun String.asDecimal(): Double? = trim().replace(',', '.').toDoubleOrNull()
 
-/** Linha que mostra a data e abre o seletor de data do Material. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateRow(label: String, epochDay: Long, onChange: (Long) -> Unit) {
@@ -85,10 +84,6 @@ private fun DateRow(label: String, epochDay: Long, onChange: (Long) -> Unit) {
 
 private const val MILLIS_PER_DAY = 86_400_000L
 
-/**
- * Cria um lote. [initialBaselineG] vem preenchido quando o lote nasce da estimativa por pesagem
- * (peso de uma PL calculado); o campo continua editável e pode ficar vazio.
- */
 @Composable
 fun NewLotDialog(
     initialName: String,
@@ -159,7 +154,6 @@ fun NewLotDialog(
     )
 }
 
-/** Registra a pesagem de UM camarão, em gramas. */
 @Composable
 fun WeighInDialog(
     lot: GrowthLot,

@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
-/** Aba "Crescimento": mostra a lista de lotes ou o detalhe do lote selecionado. */
 @Composable
 fun GrowthRoot(growthVm: GrowthViewModel, onNewLot: () -> Unit) {
     val state by growthVm.state.collectAsState()
@@ -27,6 +26,7 @@ fun GrowthRoot(growthVm: GrowthViewModel, onNewLot: () -> Unit) {
             GrowthHomeScreen(
                 state = state,
                 reference = growthVm.reference,
+                alertConfig = growthVm.alertConfig,
                 onOpen = growthVm::select,
                 onNewLot = onNewLot,
             )
@@ -34,8 +34,7 @@ fun GrowthRoot(growthVm: GrowthViewModel, onNewLot: () -> Unit) {
             GrowthDetailScreen(
                 lot = lot,
                 reference = growthVm.reference,
-                logScale = state.logScale,
-                onLogScaleChange = growthVm::setLogScale,
+                alertConfig = growthVm.alertConfig,
                 onAddWeighIn = { day, weight -> growthVm.addWeighIn(lot.id, day, weight) },
                 onRemoveWeighIn = { growthVm.removeWeighIn(lot.id, it) },
                 onDeleteLot = { growthVm.deleteLot(lot.id) },

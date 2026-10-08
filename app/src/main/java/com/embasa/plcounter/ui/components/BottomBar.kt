@@ -1,6 +1,7 @@
 package com.embasa.plcounter.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -22,13 +24,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.embasa.plcounter.ui.theme.Cobalto
+import com.embasa.plcounter.ui.theme.Coral
 import com.embasa.plcounter.ui.theme.Linha
 import com.embasa.plcounter.ui.theme.TextoSuave
 
 enum class AppTab { Count, Growth }
 
 @Composable
-fun AppBottomBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {
+fun AppBottomBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier, growthBadge: Boolean = false) {
     Column(modifier = modifier.fillMaxWidth().background(Color.White)) {
         HorizontalDivider(color = Linha)
         Row(
@@ -36,14 +39,14 @@ fun AppBottomBar(selected: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifie
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TabItem("Contagem", IconKind.Drop, selected == AppTab.Count, { onSelect(AppTab.Count) }, Modifier.weight(1f))
-            TabItem("Crescimento", IconKind.Chart, selected == AppTab.Growth, { onSelect(AppTab.Growth) }, Modifier.weight(1f))
+            TabItem("Contagem", IconKind.Drop, selected == AppTab.Count, false, { onSelect(AppTab.Count) }, Modifier.weight(1f))
+            TabItem("Crescimento", IconKind.Chart, selected == AppTab.Growth, growthBadge, { onSelect(AppTab.Growth) }, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun TabItem(label: String, icon: IconKind, active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun TabItem(label: String, icon: IconKind, active: Boolean, badge: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val color = if (active) Cobalto else TextoSuave
     Column(
         modifier = modifier.clickable(onClick = onClick).padding(vertical = 6.dp),
@@ -57,6 +60,17 @@ private fun TabItem(label: String, icon: IconKind, active: Boolean, onClick: () 
             contentAlignment = Alignment.Center,
         ) {
             IAquaIcon(icon, tint = color, iconSize = 22.dp)
+            if (badge) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 1.dp, end = 11.dp)
+                        .size(11.dp)
+                        .clip(CircleShape)
+                        .background(Coral)
+                        .border(2.dp, Color.White, CircleShape),
+                )
+            }
         }
         Text(label, style = MaterialTheme.typography.labelMedium, color = color)
     }

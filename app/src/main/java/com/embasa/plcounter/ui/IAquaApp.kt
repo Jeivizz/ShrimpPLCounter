@@ -29,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import com.embasa.plcounter.camera.CameraCaptureScreen
+import com.embasa.plcounter.domain.growth.AlertSeverity
+import com.embasa.plcounter.domain.growth.GrowthAlerts
 import com.embasa.plcounter.ui.components.AppBottomBar
 import com.embasa.plcounter.ui.components.AppTab
 import com.embasa.plcounter.ui.components.Fmt
@@ -56,9 +58,17 @@ fun IAquaApp(vm: BatchViewModel, growthVm: GrowthViewModel) {
     }
 
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
+    val growthBadge = remember(growth.lots) {
+        val today = todayEpochDay()
+        growth.lots.any { lot ->
+            GrowthAlerts.evaluate(lot, growthVm.reference, growthVm.alertConfig, today)
+                .any { it.severity >= AlertSeverity.Attention }
+        }
+    }
+
     val showBar = (tab == AppTab.Growth || state.screen == Screen.Config) && !keyboardOpen
 
-    // Voltar na lista de lotes leva de volta à aba Contagem (o detalhe trata o próprio "voltar").
     BackHandler(enabled = tab == AppTab.Growth && growth.selectedId == null) { tab = AppTab.Count }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -67,7 +77,6 @@ fun IAquaApp(vm: BatchViewModel, growthVm: GrowthViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    // Com a barra de abas visível, ela já cuida do espaço da barra de navegação do sistema.
                     .then(if (showBar) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier),
             ) {
                 if (tab == AppTab.Growth) {
@@ -130,11 +139,10 @@ fun IAquaApp(vm: BatchViewModel, growthVm: GrowthViewModel) {
                 }
             }
 
-            if (showBar) AppBottomBar(selected = tab, onSelect = { tab = it })
+            if (showBar) AppBottomBar(selected = tab, onSelect = { tab = it }, growthBadge = growthBadge)
         }
     }
 
-    // Lote criado a partir da estimativa por pesagem: o peso de uma PL já vem preenchido.
     if (trackFromWeighing) {
         NewLotDialog(
             initialName = "Lote ${Fmt.date(todayEpochDay())}",
@@ -149,7 +157,6 @@ fun IAquaApp(vm: BatchViewModel, growthVm: GrowthViewModel) {
         )
     }
 
-    // Lote criado direto na aba Crescimento.
     if (newLotManual) {
         NewLotDialog(
             initialName = "Lote ${Fmt.date(todayEpochDay())}",
