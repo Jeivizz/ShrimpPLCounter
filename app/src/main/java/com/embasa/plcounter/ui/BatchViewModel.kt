@@ -190,10 +190,10 @@ class BatchViewModel(
             null
         }
 
-        val totalKg = totalWeightText.toDecimalOrNull()
-        val comparison = if (weightEstimate != null && totalKg != null && totalKg > 0) {
+        val total = totalWeightText.toDecimalOrNull()
+        val comparison = if (weightEstimate != null && total != null && total > 0) {
             runCatching {
-                WeightCalculator.compare(weightEstimate, lot.estimatedTotal, totalKg * 1000.0)
+                WeightCalculator.compare(weightEstimate, lot.estimatedTotal, total)
             }.getOrNull()
         } else {
             null

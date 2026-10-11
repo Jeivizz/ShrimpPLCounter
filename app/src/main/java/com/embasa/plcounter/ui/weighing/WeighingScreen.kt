@@ -159,7 +159,7 @@ fun WeighingScreen(
                         label = "Peso total medido",
                         value = state.totalWeightText,
                         onValueChange = onTotalWeightChange,
-                        unit = "kg",
+                        unit = "g",
                         icon = IconKind.Scale,
                     )
 
