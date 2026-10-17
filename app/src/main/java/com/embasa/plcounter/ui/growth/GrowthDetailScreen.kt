@@ -147,11 +147,14 @@ fun GrowthDetailScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = TextoSuave,
                 )
+                /*
                 Text(
                     text = "Referência: ${reference.name ?: "curva do arquivo growth_reference.csv"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextoSuave,
                 )
+
+                 */
             }
 
             // Pesagens
